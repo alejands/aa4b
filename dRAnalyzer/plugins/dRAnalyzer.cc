@@ -28,6 +28,11 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/Math/interface/deltaR.h"
 //
 // class declaration
 //
@@ -52,6 +57,20 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       virtual void endJob() override;
 
       // ----------member data ---------------------------
+      edm::EDGetTokenT<reco::GenParticleCollection> genParticleCollectionT_;
+
+      TH1F* hNumGenParticles;
+      TH1F* hNumDaughters;
+      TH1F* hId;
+      TH1F* hHDId;
+      TH1F* hHNumD;
+      TH1F* hADId;
+      TH1F* hANumD;
+      //TH1F* hMass;
+      //TH1F* hpT;
+      //TH1F* hEta;
+      //TH1F* hPhi;
+      //TH1F* hDR;
 };
 
 //
@@ -68,9 +87,20 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 dRAnalyzer::dRAnalyzer(const edm::ParameterSet& iConfig)
 
 {
-   //now do what ever initialization is needed
-   usesResource("TFileService");
+   // grab particle collection(s) to be read
+   genParticleCollectionT_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticleCollection"));
 
+   // now do what ever initialization is needed
+   usesResource("TFileService");
+   edm::Service<TFileService> fs;
+
+   hNumGenParticles = fs->make<TH1F>("NumGenParticles", "Number of Gen Particles in Event", 100, 0, 500);
+   hNumDaughters = fs->make<TH1F>("NumDaughters", "Number of Daughters", 20, 0, 20);
+   hId = fs->make<TH1F>("Id", "Gen Particle pdgId", 80, -40, 40);
+   hHDId = fs->make<TH1F>("HDId", "Higgs Daughter ID", 80,-40,40);
+   hHNumD = fs->make<TH1F>("HNumD", "Higgs Number of Daughters", 20,0,20);
+   hADId = fs->make<TH1F>("ADId", "a Daughter Id", 80,-40,40);
+   hANumD = fs->make<TH1F>("ANumD", "a Number of Daughters", 20,0,20);
 }
 
 
@@ -91,9 +121,21 @@ dRAnalyzer::~dRAnalyzer()
 void
 dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   using namespace edm;
+   //using namespace edm;
+   edm::Handle<reco::GenParticleCollection> genParticles;
+   iEvent.getByToken(genParticleCollectionT_, genParticles);
 
+   hNumGenParticles->Fill(genParticles->size());
+   for (unsigned int iG=0; iG < genParticles->size(); iG++){
 
+      reco::GenParticleRef iGen(genParticles, iG);
+      hNumDaughters->Fill(iGen->numberOfDaughters());
+      hId->Fill(iGen->pdgId());
+
+      if (std::abs(iGen->pdgId()) == 25){ // Higgs
+         //TODO Fill H and a info hists
+      }
+   }
 
 #ifdef THIS_IS_AN_EVENT_EXAMPLE
    Handle<ExampleData> pIn;
