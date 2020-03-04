@@ -61,11 +61,12 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
       TH1F* hNumGenParticles;
       TH1F* hNumDaughters;
-      TH1F* hId;
-      TH1F* hHDId;
-      TH1F* hHNumD;
-      TH1F* hADId;
-      TH1F* hANumD;
+      TH1F* hGenId;
+      TH1F* hHiggsDaughterId;
+      TH1F* hHiggsNumDaughters;
+      TH1F* hADaughterId;
+      TH1F* hANumDaughters;
+      TH1F* hBBDeltaR;
       //TH1F* hMass;
       //TH1F* hpT;
       //TH1F* hEta;
@@ -94,13 +95,17 @@ dRAnalyzer::dRAnalyzer(const edm::ParameterSet& iConfig)
    usesResource("TFileService");
    edm::Service<TFileService> fs;
 
-   hNumGenParticles = fs->make<TH1F>("NumGenParticles", "Number of Gen Particles in Event", 100, 0, 500);
-   hNumDaughters = fs->make<TH1F>("NumDaughters", "Number of Daughters", 20, 0, 20);
-   hId = fs->make<TH1F>("Id", "Gen Particle pdgId", 80, -40, 40);
-   hHDId = fs->make<TH1F>("HDId", "Higgs Daughter ID", 80,-40,40);
-   hHNumD = fs->make<TH1F>("HNumD", "Higgs Number of Daughters", 20,0,20);
-   hADId = fs->make<TH1F>("ADId", "a Daughter Id", 80,-40,40);
-   hANumD = fs->make<TH1F>("ANumD", "a Number of Daughters", 20,0,20);
+   const float EEXtalDeltaR = 0.0174;
+   const int nDeltaRBins = (int)(1.65/EEXtalDeltaR);
+
+   hNumGenParticles =   fs->make<TH1F>("NumGenParticles", "Number of Gen Particles in Event",   100, 0, 500);
+   hNumDaughters =      fs->make<TH1F>("NumDaughters", "Number of Daughters",                   20, 0, 20);
+   hGenId =             fs->make<TH1F>("GenId", "Gen Particle pdgId",                           80, -40, 40);
+   hHiggsDaughterId =   fs->make<TH1F>("HiggsDaughterId", "Higgs Daughter ID",                  20,20,40);
+   hHiggsNumDaughters = fs->make<TH1F>("HiggsNumDaughters", "Higgs Number of Daughters",        5,0,5);
+   hADaughterId =       fs->make<TH1F>("ADaughterId", "a Daughter Id",                          80,-40,40);
+   hANumDaughters =     fs->make<TH1F>("ANumDaughters", "a Number of Daughters",                20,0,20);
+   hBBDeltaR =          fs->make<TH1F>("BBDeltaR", "bb #DeltaR",                               nDeltaRBins,0,nDeltaRBins*EEXtalDeltaR);
 }
 
 
@@ -121,32 +126,48 @@ dRAnalyzer::~dRAnalyzer()
 void
 dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   //using namespace edm;
-   edm::Handle<reco::GenParticleCollection> genParticles;
-   iEvent.getByToken(genParticleCollectionT_, genParticles);
-
-   hNumGenParticles->Fill(genParticles->size());
-   for (unsigned int iG=0; iG < genParticles->size(); iG++){
-
-      reco::GenParticleRef iGen(genParticles, iG);
-      hNumDaughters->Fill(iGen->numberOfDaughters());
-      hId->Fill(iGen->pdgId());
-
-      if (std::abs(iGen->pdgId()) == 25){ // Higgs
-         //TODO Fill H and a info hists
-      }
-   }
-
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
+    //using namespace edm;
+    edm::Handle<reco::GenParticleCollection> genParticles;
+    iEvent.getByToken(genParticleCollectionT_, genParticles);
+ 
+    hNumGenParticles->Fill(genParticles->size());
+    for (unsigned iG=0; iG < genParticles->size(); iG++){
+ 
+        reco::GenParticleRef iGen(genParticles, iG);
+        hNumDaughters->Fill(iGen->numberOfDaughters());
+        hGenId->Fill(iGen->pdgId());
+  
+        unsigned numD;
+        if (std::abs(iGen->pdgId()) == 25){ // Higgs
+            numD = iGen->numberOfDaughters();
    
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
-}
+            bool decaysToAA = true;
+            for (unsigned iD=0; iD<numD; iD++) if (iGen->daughter(iD)->pdgId() != 36) decaysToAA = false;
+   
+            if (decaysToAA){
+                hHiggsNumDaughters->Fill(numD);
+                for (unsigned iD=0; iD<numD; iD++){
+                    hHiggsDaughterId->Fill( iGen->daughter(iD)->pdgId() );
+                }
+            }
+        } // end Higgs loop
+  
+        if (iGen->pdgId() == 36) { // scalar a
+            numD = iGen->numberOfDaughters();
+
+            hANumDaughters->Fill(numD);
+            for (unsigned iD=0; iD<numD; iD++){
+                hADaughterId->Fill( iGen->daughter(iD)->pdgId() );
+            }
+            if (numD != 2) continue;
+            float dR = reco::deltaR( iGen->daughter(0)->eta(),iGen->daughter(0)->phi(), iGen->daughter(1)->eta(),iGen->daughter(1)->phi() );
+            hBBDeltaR->Fill(dR);
+        } // end a loop
+ 
+    } // end Gen loop
+
+
+} // end analyze()
 
 
 // ------------ method called once each job just before starting event loop  ------------
