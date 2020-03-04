@@ -9,8 +9,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 #inputFile = "dRAnalyzer/filelists/aaTo4b_M-12.txt"
 #inputFile = "dRAnalyzer/filelists/aaTo4b_M-15.txt"
-#inputFile = "dRAnalyzer/filelists/aaTo4b_M-20.txt"
-inputFile = "dRAnalyzer/filelists/aaTo4b_M-25.txt"
+inputFile = "dRAnalyzer/filelists/aaTo4b_M-20.txt"
+#inputFile = "dRAnalyzer/filelists/aaTo4b_M-25.txt"
 #inputFile = "dRAnalyzer/filelists/aaTo4b_M-30.txt"
 #inputFile = "dRAnalyzer/filelists/aaTo4b_M-40.txt"
 #inputFile = "dRAnalyzer/filelists/aaTo4b_M-50.txt"
