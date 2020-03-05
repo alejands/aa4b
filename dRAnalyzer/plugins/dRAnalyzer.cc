@@ -59,24 +59,22 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       edm::EDGetTokenT<reco::GenParticleCollection> genParticleCollectionT_;
 
-      TH1F* hNumGenParticles;
-      TH1F* hNumDaughters;
-      TH1F* hGenId;
-      TH1F* hHiggsDaughterId;
-      TH1F* hHiggsNumDaughters;
-      TH1F* hADaughterId;
-      TH1F* hANumDaughters;
-      TH1F* hBBDeltaR;
-      //TH1F* hMass;
-      //TH1F* hpT;
-      //TH1F* hEta;
-      //TH1F* hPhi;
-      //TH1F* hDR;
+      TTree* deltaRTree;
+      int NumGenParticles;
+      std::vector<int> intNumDaughters;
+      std::vector<int> GenId;
+      std::vector<int> HiggsDaughterId;
+      std::vector<int> HiggsNumDaughters;
+      std::vector<int> aDaughterId;
+      std::vector<int> aNumDaughters;
+      std::vector<int> bbDeltaR;
 };
 
 //
 // constants, enums and typedefs
 //
+const float EEXtalDeltaR = 0.0174;
+const int nDeltaRBins = (int)(1.65/EEXtalDeltaR);
 
 //
 // static data member definitions
@@ -88,24 +86,22 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 dRAnalyzer::dRAnalyzer(const edm::ParameterSet& iConfig)
 
 {
-   // grab particle collection(s) to be read
-   genParticleCollectionT_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticleCollection"));
+    // grab particle collection(s) to be read
+    genParticleCollectionT_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticleCollection"));
 
-   // now do what ever initialization is needed
-   usesResource("TFileService");
-   edm::Service<TFileService> fs;
+    // now do what ever initialization is needed
+    usesResource("TFileService");
+    edm::Service<TFileService> fs;
 
-   const float EEXtalDeltaR = 0.0174;
-   const int nDeltaRBins = (int)(1.65/EEXtalDeltaR);
-
-   hNumGenParticles =   fs->make<TH1F>("NumGenParticles", "Number of Gen Particles in Event",   100, 0, 500);
-   hNumDaughters =      fs->make<TH1F>("NumDaughters", "Number of Daughters",                   20, 0, 20);
-   hGenId =             fs->make<TH1F>("GenId", "Gen Particle pdgId",                           80, -40, 40);
-   hHiggsDaughterId =   fs->make<TH1F>("HiggsDaughterId", "Higgs Daughter ID",                  20,20,40);
-   hHiggsNumDaughters = fs->make<TH1F>("HiggsNumDaughters", "Higgs Number of Daughters",        5,0,5);
-   hADaughterId =       fs->make<TH1F>("ADaughterId", "a Daughter Id",                          80,-40,40);
-   hANumDaughters =     fs->make<TH1F>("ANumDaughters", "a Number of Daughters",                20,0,20);
-   hBBDeltaR =          fs->make<TH1F>("BBDeltaR", "bb #DeltaR",                               nDeltaRBins,0,nDeltaRBins*EEXtalDeltaR);
+    deltaRTree = fs->make<TTree>("deltaRTree", "deltaRTree");
+    deltaRTree->Branch("NumGenParticles",   &NumGenParticles);
+    deltaRTree->Branch("NumDaughters",      &NumDaughters);
+    deltaRTree->Branch("GenId",             &GenId);
+    deltaRTree->Branch("HiggsDaughterId",   &HiggsDaughterId);
+    deltaRTree->Branch("HiggsNumDaughters", &HiggsNumDaughters);
+    deltaRTree->Branch("aDaughterId",       &aDaughterId);
+    deltaRTree->Branch("aNumDaughters",     &aNumDaughters);
+    deltaRTree->Branch("bbDeltaR",          &bbDeltaR);
 }
 
 
@@ -129,43 +125,49 @@ dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //using namespace edm;
     edm::Handle<reco::GenParticleCollection> genParticles;
     iEvent.getByToken(genParticleCollectionT_, genParticles);
- 
-    hNumGenParticles->Fill(genParticles->size());
-    for (unsigned iG=0; iG < genParticles->size(); iG++){
+
+    intNumDaughters.clear();
+    GenId.clear();
+    HiggsDaughterId.clear();
+    HiggsNumDaughters.clear();
+    aDaughterId.clear();
+    aNumDaughters.clear();
+    bbDeltaR.clear(); 
+
+    NumGenParticles = genParticles->size();
+
+    for (unsigned iG=0; iG < genParticles->size(); iG++){ // Gen
  
         reco::GenParticleRef iGen(genParticles, iG);
-        hNumDaughters->Fill(iGen->numberOfDaughters());
-        hGenId->Fill(iGen->pdgId());
+        NumDaughters.push_back( iGen->numberOfDaughters() );
+        GenId.push_back( iGen->pdgId() );
   
         unsigned numD;
+
         if (std::abs(iGen->pdgId()) == 25){ // Higgs
             numD = iGen->numberOfDaughters();
-   
-            bool decaysToAA = true;
-            for (unsigned iD=0; iD<numD; iD++) if (iGen->daughter(iD)->pdgId() != 36) decaysToAA = false;
-   
-            if (decaysToAA){
-                hHiggsNumDaughters->Fill(numD);
-                for (unsigned iD=0; iD<numD; iD++){
-                    hHiggsDaughterId->Fill( iGen->daughter(iD)->pdgId() );
+            HiggsNumDaughters.push_back(numD);
+            for (unsigned iD=0; iD<numD; iD++){
+                HiggsDaughterId.push_back( iGen->daughter(iD)->pdgId() );
                 }
             }
         } // end Higgs loop
   
         if (iGen->pdgId() == 36) { // scalar a
             numD = iGen->numberOfDaughters();
+            hANumDaughters.push_back(numD);
 
-            hANumDaughters->Fill(numD);
             for (unsigned iD=0; iD<numD; iD++){
-                hADaughterId->Fill( iGen->daughter(iD)->pdgId() );
+                hADaughterId.push_back( iGen->daughter(iD)->pdgId() );
             }
             if (numD != 2) continue;
             float dR = reco::deltaR( iGen->daughter(0)->eta(),iGen->daughter(0)->phi(), iGen->daughter(1)->eta(),iGen->daughter(1)->phi() );
-            hBBDeltaR->Fill(dR);
+            hBBDeltaR.push_back(dR);
         } // end a loop
  
     } // end Gen loop
 
+    deltaRTree->Fill();
 
 } // end analyze()
 
