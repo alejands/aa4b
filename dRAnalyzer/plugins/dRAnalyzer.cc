@@ -33,6 +33,8 @@
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Math/interface/deltaR.h"
+
+#include <TTree.h>
 //
 // class declaration
 //
@@ -61,7 +63,7 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
       TTree* deltaRTree;
       int NumGenParticles;
-      std::vector<int> intNumDaughters;
+      std::vector<int> NumDaughters;
       std::vector<int> GenId;
       std::vector<int> HiggsDaughterId;
       std::vector<int> HiggsNumDaughters;
@@ -126,7 +128,7 @@ dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     edm::Handle<reco::GenParticleCollection> genParticles;
     iEvent.getByToken(genParticleCollectionT_, genParticles);
 
-    intNumDaughters.clear();
+    NumDaughters.clear();
     GenId.clear();
     HiggsDaughterId.clear();
     HiggsNumDaughters.clear();
@@ -149,20 +151,19 @@ dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             HiggsNumDaughters.push_back(numD);
             for (unsigned iD=0; iD<numD; iD++){
                 HiggsDaughterId.push_back( iGen->daughter(iD)->pdgId() );
-                }
             }
         } // end Higgs loop
   
         if (iGen->pdgId() == 36) { // scalar a
             numD = iGen->numberOfDaughters();
-            hANumDaughters.push_back(numD);
+            aNumDaughters.push_back(numD);
 
             for (unsigned iD=0; iD<numD; iD++){
-                hADaughterId.push_back( iGen->daughter(iD)->pdgId() );
+                aDaughterId.push_back( iGen->daughter(iD)->pdgId() );
             }
             if (numD != 2) continue;
             float dR = reco::deltaR( iGen->daughter(0)->eta(),iGen->daughter(0)->phi(), iGen->daughter(1)->eta(),iGen->daughter(1)->phi() );
-            hBBDeltaR.push_back(dR);
+            bbDeltaR.push_back(dR);
         } // end a loop
  
     } // end Gen loop
