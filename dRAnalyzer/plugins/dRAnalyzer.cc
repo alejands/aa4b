@@ -69,14 +69,12 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       std::vector<int> HiggsNumDaughters;
       std::vector<int> aDaughterId;
       std::vector<int> aNumDaughters;
-      std::vector<int> bbDeltaR;
+      std::vector<float> bbDeltaR;
 };
 
 //
 // constants, enums and typedefs
 //
-const float EEXtalDeltaR = 0.0174;
-const int nDeltaRBins = (int)(1.65/EEXtalDeltaR);
 
 //
 // static data member definitions
