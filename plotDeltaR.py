@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 from ROOT import gROOT, kTRUE, gStyle, TH1F, TCanvas, TFile
 
-mass = "12"
+mass = "60"
 xtalDeltaR = 0.0174
 nDeltaRBins = int(1.65//xtalDeltaR)
 
@@ -17,8 +17,11 @@ hDeltaR = TH1F("hDeltaR", "a->bb (m_{a} = "+mass+" GeV) Gen Level #DeltaR(b,b)",
 hDeltaR.SetMaximum(52000)
 hDeltaR.GetXaxis().SetTitle("#DeltaR(b,b)")
 
-for i,entry in enumerate(deltaRTree):
-    for deltaR in entry.bbDeltaR:
+print("loop over tree")
+for entry in xrange(deltaRTree.GetEntries()):
+    if entry%10000 == 0: print(entry)
+    deltaRTree.GetEntry(entry)
+    for deltaR in deltaRTree.bbDeltaR:
         hDeltaR.Fill(deltaR)
 
 hDeltaR.Draw()
