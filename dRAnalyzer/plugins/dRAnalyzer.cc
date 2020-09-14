@@ -59,6 +59,8 @@ class dRAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       virtual void endJob() override;
 
       // ----------member data ---------------------------
+      void dRStudy(const edm::Event&, const edm::EventSetup&);
+
       edm::EDGetTokenT<reco::GenParticleCollection> genParticleCollectionT_;
 
       TTree* deltaRTree;
@@ -122,6 +124,36 @@ dRAnalyzer::~dRAnalyzer()
 void
 dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+    dRStudy(iEvent, iSetup);
+} // end analyze()
+
+
+// ------------ method called once each job just before starting event loop  ------------
+void 
+dRAnalyzer::beginJob()
+{
+}
+
+// ------------ method called once each job just after ending the event loop  ------------
+void 
+dRAnalyzer::endJob() 
+{
+}
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void
+dRAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  //The following says we do not know what parameters are allowed so do no validation
+  // Please change this to state exactly what you do use, even if it is no parameters
+  edm::ParameterSetDescription desc;
+  desc.setUnknown();
+  descriptions.addDefault(desc);
+}
+
+
+void
+dRAnalyzer::dRStudy(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
     //using namespace edm;
     edm::Handle<reco::GenParticleCollection> genParticles;
     iEvent.getByToken(genParticleCollectionT_, genParticles);
@@ -168,30 +200,7 @@ dRAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     deltaRTree->Fill();
 
-} // end analyze()
-
-
-// ------------ method called once each job just before starting event loop  ------------
-void 
-dRAnalyzer::beginJob()
-{
-}
-
-// ------------ method called once each job just after ending the event loop  ------------
-void 
-dRAnalyzer::endJob() 
-{
-}
-
-// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void
-dRAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  //The following says we do not know what parameters are allowed so do no validation
-  // Please change this to state exactly what you do use, even if it is no parameters
-  edm::ParameterSetDescription desc;
-  desc.setUnknown();
-  descriptions.addDefault(desc);
-}
+} // end dRStudy()
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(dRAnalyzer);
